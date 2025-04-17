@@ -1,21 +1,30 @@
+import os
+PROJ_DIR = os.path.abspath(os.path.join(__file__, "../../"))
+print("PROJ_DIR", PROJ_DIR)
+import sys
+sys.path.append(PROJ_DIR)
+print(sys.path)
 
 import numpy as np
 from configs import Config
-from infer.modules.vc import VC
 from infer.modules.vc.pipeline import Pipeline
 from infer.modules.vc.utils import load_hubert
 from rvc.synthesizer import load_synthesizer
+from dotenv import load_dotenv
+
+load_dotenv(os.path.join(PROJ_DIR, ".env"))
+load_dotenv(os.path.join(PROJ_DIR, "sha256.env"))
 
 
 class RVCModel:
     def __init__(self, pth_file, idx_file="", is_half=False):
+        self.pth_file = pth_file
+        self.idx_file = idx_file
         self.config = Config()
         self.config.is_half = is_half
 
         self.hubert_model = load_hubert(self.config.device, self.config.is_half)
-        self.file_index = idx_file
-
-        self.net_g, self.cpt = load_synthesizer(pth_file, self.config.device)
+        self.net_g, self.cpt = load_synthesizer(self.pth_file, self.config.device)
         self.tgt_sr = self.cpt["config"][-1]
         self.cpt["config"][-3] = self.cpt["weight"]["emb_g.weight"].shape[0]  # n_spk
         self.if_f0 = self.cpt.get("f0", 1)
@@ -74,7 +83,7 @@ class RVCModel:
             times,
             f0_up_key,
             f0_method,
-            self.file_index,
+            self.idx_file,
             index_rate,
             self.if_f0,
             filter_radius,

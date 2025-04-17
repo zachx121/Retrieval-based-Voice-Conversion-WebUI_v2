@@ -16,7 +16,9 @@ RATE = 16000
 CHUNK_TIME = 30
 CHUNK = int(CHUNK_TIME * RATE / 1000)
 
-server_url = 'http://your_server_address'  # 替换为实际的服务端地址
+server_url = 'https://u212392-a13f-30455eaf.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
+model_name, f0 = "wuyusen_manual_clear.pth", 0
+model_name, f0 = "chaojiwudijia.pth", 12
 inp_device, opt_device = "桐的AirPods Pro #4", "MacBook Pro扬声器"
 # inp_device, opt_device = "MacBook Pro麦克风", "桐的AirPods Pro #4"
 # inp_device, opt_device = "MacBook Pro麦克风", "MacBook Pro扬声器"
@@ -72,13 +74,31 @@ is_speaking = False
 sio = socketio.Client()
 sio.connect(server_url)
 
+loaded=False
+sio.emit('load_model', {"model_name": model_name})
+@sio.on('load_model')
+def on_load_model(info):
+    global loaded
+    print(info)
+    loaded = True
+
+
+while not loaded:
+    time.sleep(1)
+    print(">>> 模型还未加载...")
+
 print("* 开始录音")
 
+
 @sio.on('process_audio')
-def on_process_audio(audio_b64):
+def on_process_audio(info):
+    info = json.loads(info)
+    if info['status'] != 0:
+        print(info)
+        return
     global audio_frames, silent_frames_count, is_speaking
     # 解析音频数据
-    audio_bytes = base64.b64decode(audio_b64)
+    audio_bytes = base64.b64decode(info["message"]["audio"])
     # 转换为音频数组（int16）
     audio_arr_int16 = np.frombuffer(audio_bytes, dtype=np.int16)
     e = time.time()
@@ -116,15 +136,16 @@ while True:
     if is_speaking and silent_frames_count >= SILENT_FRAMES_THRESHOLD:
         print("检测到停顿，发送音频数据到服务端")
         audio_buffer = b''.join(audio_frames)
-        # 监听
-        # stream.write(audio_buffer)  # 写入音频数据
-        # continue
-
         # 构造请求数据
         audio_b64 = base64.b64encode(audio_buffer).decode()
         b = time.time()
         # 发送音频数据到服务端
-        sio.emit('audio_data', audio_b64)
+        sio.emit('audio_data', json.dumps({"audio": audio_b64, "f0": f0}))
+
+        # 清空音频帧列表
+        audio_frames = []
+        silent_frames_count = 0
+        is_speaking = False
 
 
 print("* 录音结束")
