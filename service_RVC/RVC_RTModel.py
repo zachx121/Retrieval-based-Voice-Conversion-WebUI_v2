@@ -200,12 +200,17 @@ class RTRVCModel:
         phase = int(self.sr * self.gui_config.block_time)
         self.audio_callback(np.zeros((phase,)))
 
-    def audio_callback(self, indata: np.ndarray):
+    def audio_callback(self,
+                       indata: np.ndarray,
+                       pitch=0,
+                       index_rate=0.85):
         """
         音频处理
         indata: 长度为10000的float32数组（40khz音频的250ms片段）
         """
         global flag_vc
+        self.gui_config.pitch = pitch
+        self.gui_config.index_rate = index_rate
         start_time = time.perf_counter()
         indata = librosa.to_mono(indata.T)
         if self.gui_config.threhold > -60:
