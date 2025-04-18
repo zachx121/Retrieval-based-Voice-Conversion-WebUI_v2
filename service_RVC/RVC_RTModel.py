@@ -49,7 +49,7 @@ class GUIConfig:
 
 
 class RTRVCModel:
-    def __init__(self, pth_file, idx_file="", block_time=0.25, sr=None):
+    def __init__(self, pth_file, idx_file="", block_time=0.25, sr=16000):
         self.gui_config = GUIConfig()
         self.config = Config()
         self.gui_config.pth_path = self.pth_file = pth_file
