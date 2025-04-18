@@ -773,7 +773,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                     step=1,
                     label=i18n("Select Speaker/Singer ID"),
                     value=0,
-                    visible=False,
+                    visible=True,
                     interactive=True,
                 )
                 clean_button.click(
