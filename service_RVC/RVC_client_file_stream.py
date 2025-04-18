@@ -11,6 +11,7 @@ from tqdm.auto import tqdm
 from queue import Queue
 import threading
 
+
 def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
     # 计算每个片段的样本数
     chunk_size = int(sample_rate * chunk_duration)
@@ -31,6 +32,7 @@ def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
 
 
 server_url = 'https://u212392-acba-ac1c14ab.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
+server_url = 'https://u212392-8e18-0862f9b7.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
 file_path = '/Users/zhou/Downloads/tmp/作为原声驱动/董宇辉带货_16k_mono.wav'
 """
 yujiesangsang.pth
@@ -122,7 +124,7 @@ audio_thread.start()
 
 
 loaded = False
-sio.emit('load_model', {"model_name": model_name, "f0": f0})
+sio.emit('load_model', json.dumps({"model_name": model_name, "f0": f0}))
 while not loaded:
     time.sleep(1)
     print(">>> 模型还未加载...")
@@ -135,6 +137,7 @@ for chunk in tqdm(read_audio_in_chunks(file_path, sr)):
     audio_buffer = chunk.tobytes()
     # 构造请求数据
     audio_b64 = base64.b64encode(audio_buffer).decode()
+    print(chunk.shape, len(audio_buffer), len(audio_b64))
     # 发送音频数据到服务端
     sio.emit('audio_data', json.dumps({"audio": audio_b64}))
     time.sleep(0.1)

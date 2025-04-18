@@ -31,6 +31,8 @@ def get_model_list():
 
 @socketio.on('load_model')
 def load_model(data):
+    print(f">>> receive request on 'load_model', data: {data}")
+    data = json.loads(data)
     global M
     model_name = data.get('model_name')  # e.g. 'wuyusen_manual_clear.pth'
     f0 = data.get('f0', 0)
@@ -57,6 +59,7 @@ def load_model(data):
 @socketio.on('audio_data')
 def process_audio(data):
     global M
+    print(f">>> receive request on 'process_audio', data: {data}")
     logging.debug(f"process_audio...")
     if M:
         try:
