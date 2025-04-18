@@ -18,6 +18,7 @@ from infer.modules.vc.utils import load_hubert
 from rvc.synthesizer import load_synthesizer
 from dotenv import load_dotenv
 import time
+import librosa
 
 load_dotenv(os.path.join(PROJ_DIR, ".env"))
 load_dotenv(os.path.join(PROJ_DIR, "sha256.env"))
