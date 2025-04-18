@@ -33,10 +33,12 @@ def get_model_list():
 def load_model(data):
     global M
     model_name = data.get('model_name')  # e.g. 'wuyusen_manual_clear.pth'
+    f0 = data.get('f0')
+    index_rate = data.get("index_rate", 0.0)
     if model_name:
         try:
             pth_file = os.path.join(PROJ_DIR, "assets", "weights", model_name)
-            M = RTRVCModel(pth_file)
+            M = RTRVCModel(pth_file, pitch=f0, index_rate=index_rate)
             M.warmup()
             # 发送成功消息给客户端
             print(f"model loaded '{model_name}'")

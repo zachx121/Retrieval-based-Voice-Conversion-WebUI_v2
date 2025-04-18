@@ -49,12 +49,17 @@ class GUIConfig:
 
 
 class RTRVCModel:
-    def __init__(self, pth_file, idx_file="", block_time=0.25, sr=16000):
+    def __init__(self, pth_file, idx_file="",
+                 block_time=0.25,
+                 sr=16000,
+                 pitch=0,
+                 index_rate=0.0):
         self.gui_config = GUIConfig()
         self.config = Config()
         self.gui_config.pth_path = self.pth_file = pth_file
         self.gui_config.index_path = self.idx_file = idx_file
-        self.gui_config.block_time = self.block_time = block_time
+        self.gui_config.pitch = self.pitch = pitch
+        self.gui_config.index_rate = self.index_rate = index_rate
         self.function = "vc"
 
         # >>> start_vc:
@@ -200,17 +205,12 @@ class RTRVCModel:
         phase = int(self.sr * self.gui_config.block_time)
         self.audio_callback(np.zeros((phase,)))
 
-    def audio_callback(self,
-                       indata: np.ndarray,
-                       pitch=0,
-                       index_rate=0.85):
+    def audio_callback(self, indata: np.ndarray):
         """
         音频处理
         indata: 长度为10000的float32数组（40khz音频的250ms片段）
         """
         global flag_vc
-        self.gui_config.pitch = pitch
-        self.gui_config.index_rate = index_rate
         start_time = time.perf_counter()
         indata = librosa.to_mono(indata.T)
         if self.gui_config.threhold > -60:
@@ -356,7 +356,7 @@ class RTRVCModel:
                               ]
         res = infer_wav[: self.block_frame].repeat(self.gui_config.channels, 1).t().cpu().numpy()
         total_time = time.perf_counter() - start_time
-        print("Infer time: %.2f", total_time)
+        # print("Infer time: %.2f", total_time)
         return self.sr, res
 
 
