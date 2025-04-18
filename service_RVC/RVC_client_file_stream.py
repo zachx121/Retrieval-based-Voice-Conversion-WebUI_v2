@@ -2,14 +2,14 @@ import librosa
 import numpy as np
 import sys
 import pyaudio
-import numpy as np
 import base64
 import json
 import time
 import webrtcvad
 import socketio
 from tqdm.auto import tqdm
-
+from queue import Queue
+import threading
 
 def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
     # 计算每个片段的样本数
@@ -42,18 +42,18 @@ stream = p.open(format=pyaudio.paInt16,
                 input=False,  # 不作为输入流
                 output=True)
 
-
 # 创建 Socket.IO 客户端实例
 sio = socketio.Client()
 sio.connect(server_url)
 
+# 用于存储音频数据的队列
+audio_queue = Queue()
 
 @sio.on('load_model')
 def on_load_model(info):
     global loaded
     print(info)
     loaded = True
-
 
 @sio.on('process_audio')
 def on_process_audio(info):
@@ -65,8 +65,24 @@ def on_process_audio(info):
     audio_bytes = base64.b64decode(info["message"]["audio"])
     # 转换为音频数组（int16）
     audio_arr_int16 = np.frombuffer(audio_bytes, dtype=np.int16)
-    # 播放音频（创建输出流）
-    stream.write(audio_arr_int16.tobytes(), exception_on_underflow=False)  # 写入音频数据
+    # 将音频数据放入队列
+    audio_queue.put(audio_arr_int16)
+
+
+# 子线程函数，用于从队列中取出音频数据并写入音频流
+def play_audio():
+    while True:
+        if not audio_queue.empty():
+            audio_arr_int16 = audio_queue.get()
+            # 写入音频数据
+            stream.write(audio_arr_int16.tobytes(), exception_on_underflow=False)
+        else:
+            time.sleep(0.01)
+
+
+# 启动子线程
+audio_thread = threading.Thread(target=play_audio)
+audio_thread.start()
 
 
 loaded = False
@@ -83,10 +99,9 @@ for chunk in tqdm(read_audio_in_chunks(file_path, sr)):
     audio_buffer = chunk.tobytes()
     # 构造请求数据
     audio_b64 = base64.b64encode(audio_buffer).decode()
-    b = time.time()
     # 发送音频数据到服务端
     sio.emit('audio_data', json.dumps({"audio": audio_b64}))
-    time.sleep(0.3)
+    time.sleep(0.1)
 
 
 while True:
