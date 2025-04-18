@@ -32,8 +32,44 @@ def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
 
 server_url = 'https://u212392-acba-ac1c14ab.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
 file_path = '/Users/zhou/Downloads/tmp/作为原声驱动/董宇辉带货_16k_mono.wav'
-model_name = "wuyusen_manual_clear.pth"
-model_name = "kikiv2.pth"
+"""
+yujiesangsang.pth
+yujie4.pth
+yueliang40k.pth
+xuexue.pth
+xiumeng.pth
+XIAOYUTING02.pth
+xiaoru.pth
+xianbao.pth
+wuyusen.pth
+wuyusen_manual.pth
+wuyusen_manual_clear.pth
+tt.pth
+tianer15.pth
+SHILIU.pth
+Shaoyu.pth
+qingju40k.pth
+nikou48k.pth
+mi-test.pth
+manbo.pth
+luoli.pth
+lipuplusnew11.pth
+lipuplusnew11 (1).pth
+kikiv2.pth
+kelala-v1_e200_s6200.pth
+doubaoxin (1).pth
+chuxueronghe.pth
+chaojiwudijia.pth
+bailu2.pth
+acu.pth
+"""
+# 男变女，声音升调
+model_name, f0 = "xuexue.pth", +12
+model_name, f0 = "luoli.pth", +6
+model_name, f0 = "kikiv2.pth", +6
+model_name, f0 = "manbo.pth", +6
+# 男变男
+model_name, f0 = "wuyusen_manual_clear.pth", +0
 
 p = pyaudio.PyAudio()
 stream = p.open(format=pyaudio.paInt16,
@@ -86,7 +122,7 @@ audio_thread.start()
 
 
 loaded = False
-sio.emit('load_model', {"model_name": model_name})
+sio.emit('load_model', {"model_name": model_name, "f0": f0})
 while not loaded:
     time.sleep(1)
     print(">>> 模型还未加载...")

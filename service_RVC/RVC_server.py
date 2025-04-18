@@ -33,7 +33,7 @@ def get_model_list():
 def load_model(data):
     global M
     model_name = data.get('model_name')  # e.g. 'wuyusen_manual_clear.pth'
-    f0 = data.get('f0')
+    f0 = data.get('f0', 0)
     index_rate = data.get("index_rate", 0.0)
     if model_name:
         try:
