@@ -196,6 +196,10 @@ class RTRVCModel:
             self.gui_config.f0method,
         )
 
+    def warmup(self):
+        phase = int(self.sr * self.gui_config.block_time)
+        self.audio_callback(np.zeros((phase,)))
+
     def audio_callback(self, indata: np.ndarray):
         """
         音频处理
