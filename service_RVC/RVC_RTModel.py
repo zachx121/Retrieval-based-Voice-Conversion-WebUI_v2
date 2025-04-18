@@ -348,7 +348,7 @@ class RTRVCModel:
         res = infer_wav[: self.block_frame].repeat(self.gui_config.channels, 1).t().cpu().numpy()
         total_time = time.perf_counter() - start_time
         print("Infer time: %.2f", total_time)
-        return M.sr, res
+        return self.sr, res
 
 
 def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
