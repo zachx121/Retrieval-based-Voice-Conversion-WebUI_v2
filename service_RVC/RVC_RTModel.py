@@ -211,7 +211,14 @@ class RTRVCModel:
     def audio_callback(self, indata: np.ndarray):
         """
         音频处理
-        indata: 长度为10000的float32数组（40khz音频的250ms片段）
+        注: 以下shape示例均为sr=16khz block_time=0.25s时
+        indata: np.float32 (4000)
+        self.zc: int, 160 它是sr//100的结果，也就是10ms音频对应的数组长度
+        self.input_wav: torch.float32 (44960,)
+            - extra_frame + crossfade_frame + sola_search_frame + block_frame
+            - 40000+800+160+4000
+        self.input_wav_res: torch.float32 (44960,)
+        self.rms_buffer: (640,)
         """
         global flag_vc
         start_time = time.perf_counter()
@@ -361,6 +368,12 @@ class RTRVCModel:
         total_time = time.perf_counter() - start_time
         # print("Infer time: %.2f", total_time)
         return self.sr, res
+
+    def audio_callback_int16(self, indata: np.ndarray):
+        sr, audio_opt = self.audio_callback(indata)  # float32 16khz
+        audio_opt = audio_opt[:, 0]
+        audio_opt = (np.clip(audio_opt, -1.0, 1.0) * 32767).astype(np.int16)
+        return sr, audio_opt
 
 
 def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
