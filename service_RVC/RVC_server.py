@@ -10,6 +10,8 @@ import json
 import librosa
 import scipy
 import time
+from queue import Queue
+import threading
 import logging
 logger = logging.getLogger("RVC_server")
 logger.setLevel(logging.DEBUG)
@@ -65,6 +67,34 @@ def load_model(data):
     logger.info(f"newly loaded M.pth_file: {M.pth_file}")
 
 
+# 用于存储音频数据的队列
+inp_queue = Queue()
+def save_inp_pcm():
+    while True:
+        if not inp_queue.empty():
+            tid, audio_buffer = inp_queue.get()
+            with open(f"./{tid}_inp.pcm", "wb") as fw:
+                fw.write(audio_buffer)
+        else:
+            time.sleep(0.01)
+# 启动子线程
+t1 = threading.Thread(target=save_inp_pcm)
+t1.start()
+
+opt_queue = Queue()
+def save_opt_pcm():
+    while True:
+        if not opt_queue.empty():
+            tid, audio_buffer = opt_queue.get()
+            with open(f"./{tid}_opt.pcm", "wb") as fw:
+                fw.write(audio_buffer)
+        else:
+            time.sleep(0.01)
+# 启动子线程
+t2 = threading.Thread(target=save_opt_pcm)
+t2.start()
+
+
 @socketio.on('audio_data')
 def process_audio(data):
     global M
@@ -78,14 +108,16 @@ def process_audio(data):
             audio_arr_int16_16khz = np.frombuffer(audio_buffer, dtype=np.int16)
             audio_arr_float32_16khz = audio_arr_int16_16khz.astype(np.float32) / 32768.0
             logger.debug(f"tid='{tid}' receive: audio.shape={audio_arr_float32_16khz.shape} audio.dtype={audio_arr_float32_16khz.dtype} audio={audio_arr_float32_16khz[:5]} {np.min(audio_arr_float32_16khz)} {np.max(audio_arr_float32_16khz)}")
+            # with open(f"./{tid}_inp.pcm", "wb") as fw:
+            #     fw.write(audio_buffer)
+            inp_queue.put((tid, audio_buffer))
+
             sr, audio_opt = M.audio_callback_int16(audio_arr_float32_16khz)  # float32 16khz
-            # >>>
             logger.debug(f"tid='{tid}' result: sr={sr} audio.shape={audio_opt.shape} audio.dtype={audio_opt.dtype} audio={audio_opt[:5]} {np.min(audio_opt)} {np.max(audio_opt)}")
-            with open(f"./{tid}_inp.pcm", "wb") as fw:
-                fw.write(audio_buffer)
-            with open(f"./{tid}_opt.pcm", "wb") as fw:
-                fw.write(audio_opt.tobytes())
-            # <<<
+            # with open(f"./{tid}_opt.pcm", "wb") as fw:
+            #     fw.write(audio_opt.tobytes())
+            opt_queue.put((tid, audio_opt.tobytes()))
+
             emit('process_audio', json.dumps({'status': 0, 'message': {"audio": base64.b64encode(audio_opt.tobytes()).decode()}}))
         except Exception as e:
             # 发送错误消息给客户端
