@@ -19,6 +19,7 @@ from rvc.synthesizer import load_synthesizer
 from dotenv import load_dotenv
 import time
 import librosa
+import threading
 
 load_dotenv(os.path.join(PROJ_DIR, ".env"))
 load_dotenv(os.path.join(PROJ_DIR, "sha256.env"))
@@ -47,7 +48,7 @@ class GUIConfig:
         self.sg_input_device: str = ""
         self.sg_output_device: str = ""
 
-
+# modified from class GUI in gui.py
 class RTRVCModel:
     def __init__(self,
                  pth_file,
@@ -56,6 +57,8 @@ class RTRVCModel:
                  sr=16000,
                  pitch=0,
                  index_rate=0.0):
+        # Model的input_wav每次推理都会被更新，而在socket里调用时会多个线程同时触发，必须保证被顺序修改
+        self.lock = threading.Lock()
         self.gui_config = GUIConfig()
         self.config = Config()
         self.gui_config.block_time = self.block_time = block_time
@@ -206,7 +209,7 @@ class RTRVCModel:
 
     def warmup(self):
         phase = int(self.sr * self.gui_config.block_time)
-        self.audio_callback(np.zeros((phase,)))
+        self.audio_callback_int16(np.zeros((phase,)))
 
     def audio_callback(self, indata: np.ndarray):
         """
@@ -370,10 +373,11 @@ class RTRVCModel:
         return self.sr, res
 
     def audio_callback_int16(self, indata: np.ndarray):
-        sr, audio_opt = self.audio_callback(indata)  # float32 16khz
-        audio_opt = audio_opt[:, 0]
-        audio_opt = (np.clip(audio_opt, -1.0, 1.0) * 32767).astype(np.int16)
-        return sr, audio_opt
+        with self.lock:
+            sr, audio_opt = self.audio_callback(indata)  # float32 16khz
+            audio_opt = audio_opt[:, 0]
+            audio_opt = (np.clip(audio_opt, -1.0, 1.0) * 32767).astype(np.int16)
+            return sr, audio_opt
 
 
 def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
@@ -430,7 +434,7 @@ if __name__ == '__main__':
     sr = 16000
     for chunk in read_audio_in_chunks(file_path, sr, btime):
         audio_inp.append(chunk)
-        sr, res = M.audio_callback(chunk)
+        sr, res = M.audio_callback_int16(chunk)
         res = res[:, 0]
         audio_opt.append(res)
 

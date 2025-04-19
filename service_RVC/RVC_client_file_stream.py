@@ -36,8 +36,8 @@ def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
 server_url = 'https://u212392-acba-ac1c14ab.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
 server_url = 'https://u212392-a13f-30455eaf.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
 file_path = '/Users/zhou/Downloads/tmp/作为原声驱动/董宇辉带货_16k_mono.wav'
-file_path = '/Users/zhou/Downloads/下载 (3).wav'
-file_path = '/Users/zhou/Downloads/下载 (2).wav'
+# file_path = '/Users/zhou/Downloads/下载 (3).wav'
+# file_path = '/Users/zhou/Downloads/下载 (2).wav'
 # file_path = '/Users/zhou/0-Codes/VoiceSamples/doctorwho_sliced/2月22日(3).wav'
 """
 yujiesangsang.pth
@@ -144,11 +144,11 @@ for idx, chunk in enumerate(read_audio_in_chunks(file_path, SR, BLOCK_TIME)):
     audio_buffer = chunk.tobytes()
     # 构造请求数据
     audio_b64 = base64.b64encode(audio_buffer).decode()
-    print(chunk.shape, len(audio_buffer), len(audio_b64))
+    print(idx, chunk.shape, len(audio_buffer), len(audio_b64))
     # 发送音频数据到服务端
     sio.emit(event='audio_data',
              data=json.dumps({"audio": audio_b64, "traceId": f"{time.time()*1000:.0f}_123"}))
-    time.sleep(1.0)
+    time.sleep(0.1)
 
 print("idle...")
 while True:
