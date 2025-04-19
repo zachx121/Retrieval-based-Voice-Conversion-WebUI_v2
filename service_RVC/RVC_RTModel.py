@@ -49,13 +49,16 @@ class GUIConfig:
 
 
 class RTRVCModel:
-    def __init__(self, pth_file, idx_file="",
+    def __init__(self,
+                 pth_file,
+                 idx_file="",
                  block_time=0.25,
                  sr=16000,
                  pitch=0,
                  index_rate=0.0):
         self.gui_config = GUIConfig()
         self.config = Config()
+        self.gui_config.block_time = self.block_time = block_time
         self.gui_config.pth_path = self.pth_file = pth_file
         self.gui_config.index_path = self.idx_file = idx_file
         self.gui_config.pitch = self.pitch = pitch
@@ -384,7 +387,8 @@ if __name__ == '__main__':
 
     pth_file = "assets/weights/wuyusen_manual_clear.pth"
     idx_file = "assets/indices/wuyusen_manual_IVF3201_Flat_nprobe_1_wuyusen_manual_v2.index"
-    M = RTRVCModel(pth_file, sr=16000)
+    btime = 0.5
+    M = RTRVCModel(pth_file, sr=16000, block_time=btime)
 
 
     def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
@@ -411,9 +415,10 @@ if __name__ == '__main__':
     audio_opt = []
     # 调用函数按 250ms 片段读取音频
     sr = 16000
-    for chunk in read_audio_in_chunks(file_path, sr, 0.25):
+    for chunk in read_audio_in_chunks(file_path, sr, btime):
         audio_inp.append(chunk)
-        res = M.audio_callback(chunk)[:, 0]
+        sr, res = M.audio_callback(chunk)
+        res = res[:, 0]
         audio_opt.append(res)
 
     # Audio(np.hstack(audio_inp), rate=sr)
