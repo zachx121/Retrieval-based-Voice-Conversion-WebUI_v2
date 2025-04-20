@@ -34,11 +34,12 @@ def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
 
 
 server_url = 'https://u212392-acba-ac1c14ab.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
-server_url = 'https://u212392-a13f-30455eaf.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
+server_url = 'https://u212392-acba-ac1c14ab.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
 file_path = '/Users/zhou/Downloads/tmp/作为原声驱动/董宇辉带货_16k_mono.wav'
 # file_path = '/Users/zhou/Downloads/下载 (3).wav'
 # file_path = '/Users/zhou/Downloads/下载 (2).wav'
 # file_path = '/Users/zhou/0-Codes/VoiceSamples/doctorwho_sliced/2月22日(3).wav'
+file_path = '/Users/zhou/Downloads/a.wav'
 """
 yujiesangsang.pth
 yujie4.pth
@@ -74,6 +75,7 @@ acu.pth
 model_name, f0 = "xuexue.pth", +12
 model_name, f0 = "luoli.pth", +12
 model_name, f0 = "kikiv2.pth", +12
+model_name, f0 = "xrv.pth", +12
 # model_name, f0 = "manbo.pth", +12
 # 男变男
 # model_name, f0 = "wuyusen_manual_clear.pth", +0
@@ -130,11 +132,11 @@ audio_thread = threading.Thread(target=play_audio)
 audio_thread.start()
 
 
-# loaded = False
-# sio.emit('load_model', json.dumps({"model_name": model_name, "f0": f0, "block_time": BLOCK_TIME}))
-# while not loaded:
-#     time.sleep(1)
-#     print(">>> 模型还未加载...")
+loaded = False
+sio.emit('load_model', json.dumps({"model_name": model_name, "f0": f0, "block_time": BLOCK_TIME}))
+while not loaded:
+    time.sleep(1)
+    print(">>> 模型还未加载...")
 
 
 # 调用函数按 250ms 片段读取音频

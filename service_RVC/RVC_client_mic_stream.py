@@ -20,10 +20,10 @@ RATE = 16000
 CHUNK_TIME = 30
 CHUNK = int(CHUNK_TIME * RATE / 1000)
 
-server_url = 'https://u212392-8e18-0862f9b7.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
+server_url = 'https://u212392-acba-ac1c14ab.bjb1.seetacloud.com:8443/'  # 替换为实际的服务端地址
 model_name, f0 = "wuyusen_manual_clear.pth", 0
 model_name, f0 = "chaojiwudijia.pth", 12
-model_name, f0 = "kikiv2.pth", +6
+model_name, f0 = "kikiv2.pth", +12
 inp_device, opt_device = "桐的AirPods Pro #4", "MacBook Pro扬声器"
 # inp_device, opt_device = "MacBook Pro麦克风", "桐的AirPods Pro #4"
 # inp_device, opt_device = "MacBook Pro麦克风", "MacBook Pro扬声器"
@@ -76,7 +76,7 @@ is_speaking = False
 
 # 创建 Socket.IO 客户端实例
 sio = socketio.Client()
-sio.connect(server_url)
+sio.connect(server_url, wait_timeout=5)
 
 # 用于存储音频数据的队列
 audio_queue = Queue()

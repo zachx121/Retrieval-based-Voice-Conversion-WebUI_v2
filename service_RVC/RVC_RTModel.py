@@ -48,6 +48,7 @@ class GUIConfig:
         self.sg_input_device: str = ""
         self.sg_output_device: str = ""
 
+
 # modified from class GUI in gui.py
 class RTRVCModel:
     def __init__(self,
@@ -56,7 +57,9 @@ class RTRVCModel:
                  block_time=0.25,
                  sr=16000,
                  pitch=0,
-                 index_rate=0.0):
+                 index_rate=0.0,
+                 I_denoise=False,
+                 O_denoise=False):
         # Model的input_wav每次推理都会被更新，而在socket里调用时会多个线程同时触发，必须保证被顺序修改
         self.lock = threading.Lock()
         self.gui_config = GUIConfig()
@@ -66,6 +69,8 @@ class RTRVCModel:
         self.gui_config.index_path = self.idx_file = idx_file
         self.gui_config.pitch = self.pitch = pitch
         self.gui_config.index_rate = self.index_rate = index_rate
+        self.gui_config.I_noise_reduce = self.I_denoise = I_denoise
+        self.gui_config.O_noise_reduce = self.O_denoise = O_denoise
         self.function = "vc"
 
         # >>> start_vc:
@@ -379,35 +384,7 @@ class RTRVCModel:
             audio_opt = (np.clip(audio_opt, -1.0, 1.0) * 32767).astype(np.int16)
             return sr, audio_opt
 
-
-def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
-    # 计算每个片段的样本数
-    chunk_size = int(sample_rate * chunk_duration)
-    # 使用 librosa 以指定采样率读取音频文件
-    audio, _ = librosa.load(file_path, sr=sample_rate)
-    # 计算音频的总样本数
-    total_samples = len(audio)
-    # 循环读取音频片段
-    for start in range(0, total_samples, chunk_size):
-        end = start + chunk_size
-        # 截取当前片段
-        chunk = audio[start:end]
-        # 如果当前片段长度不足 chunk_size，进行填充
-        if len(chunk) < chunk_size:
-            padding = np.zeros(chunk_size - len(chunk))
-            chunk = np.concatenate((chunk, padding))
-        yield chunk
-
-
-if __name__ == '__main__':
-    import librosa
-
-    pth_file = "assets/weights/wuyusen_manual_clear.pth"
-    idx_file = "assets/indices/wuyusen_manual_IVF3201_Flat_nprobe_1_wuyusen_manual_v2.index"
-    btime = 0.5
-    M = RTRVCModel(pth_file, sr=16000, block_time=btime)
-
-
+    @staticmethod
     def read_audio_in_chunks(file_path, sample_rate=16000, chunk_duration=0.25):
         # 计算每个片段的样本数
         chunk_size = int(sample_rate * chunk_duration)
@@ -426,17 +403,39 @@ if __name__ == '__main__':
                 chunk = np.concatenate((chunk, padding))
             yield chunk
 
+    def predict_file(self, fp):
+        aopt = []
+        # 调用函数按 250ms 片段读取音频
+        sr = 16000
+        for chunk in self.read_audio_in_chunks(fp, sr, btime):
+            sr, res = self.audio_callback_int16(chunk)
+            aopt.append(res)
+        return sr, np.hstack(aopt)
+
+
+if __name__ == '__main__':
+    import librosa
+
+    pth_file = "assets/weights/wuyusen_manual_clear.pth"
+    pth_file = "assets/weights/xrv.pth"
+    btime = 0.5
+    M = RTRVCModel(pth_file, sr=16000, block_time=btime, pitch=0, I_denoise=False, O_denoise=True)
 
     file_path = '/root/autodl-fs/audio_samples/董宇辉带货_40k_mono.wav'
     audio_inp = []
     audio_opt = []
     # 调用函数按 250ms 片段读取音频
     sr = 16000
-    for chunk in read_audio_in_chunks(file_path, sr, btime):
+    for chunk in M.read_audio_in_chunks(file_path, sr, btime):
         audio_inp.append(chunk)
         sr, res = M.audio_callback_int16(chunk)
-        res = res[:, 0]
         audio_opt.append(res)
-
     # Audio(np.hstack(audio_inp), rate=sr)
     # Audio(np.hstack(audio_opt), rate=M.gui_config.samplerate)
+
+    file_path = "/root/Retrieval-based-Voice-Conversion-WebUI_v2/a.wav"
+    wav, sr = librosa.load(file_path, sr=16000, mono=True)
+    sr, opt = M.predict_file(file_path)
+    Audio(wav, rate=sr)
+    Audio(opt, rate=sr)
+
