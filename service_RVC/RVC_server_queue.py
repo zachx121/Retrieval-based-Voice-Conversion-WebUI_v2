@@ -162,7 +162,7 @@ def model_process(sid: str, event):
             main_channel.close()
 
     try:
-        pth_file = f"/root/Retrieval-based-Voice-Conversion-WebUI_v2/assets/weights/{sid}.pth"
+        pth_file = f"/root/autodl-fs/RVC/assets/weights/{sid}.pth"
         model = RTRVCModel(pth_file, block_time=0.25)  # 变量名统一为model
         model.warmup()
         event.set()

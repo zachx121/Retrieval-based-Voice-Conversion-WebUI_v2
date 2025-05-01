@@ -1,0 +1,5 @@
+flask_socketio
+dotenv
+fairseq
+faiss-gpu
+pybase16384
