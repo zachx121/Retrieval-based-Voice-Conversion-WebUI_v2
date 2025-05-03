@@ -407,7 +407,7 @@ class RTRVCModel:
         aopt = []
         # 调用函数按 250ms 片段读取音频
         sr = 16000
-        for chunk in self.read_audio_in_chunks(fp, sr, btime):
+        for chunk in self.read_audio_in_chunks(fp, sr, self.block_time):
             sr, res = self.audio_callback_int16(chunk)
             aopt.append(res)
         return sr, np.hstack(aopt)

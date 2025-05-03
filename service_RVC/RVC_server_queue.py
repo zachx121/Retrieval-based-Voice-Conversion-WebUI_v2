@@ -314,7 +314,30 @@ def load_model():
     return json.dumps(res)
 
 
+def debug():
+    def process(sid):
+        pth_file = f"/root/autodl-fs/RVC/assets/weights/{sid}.pth"
+        model = RTRVCModel(pth_file, block_time=0.25)  # 变量名统一为model
+        model.warmup()
+        for i in range(30):
+            sr, audio_arr = model.predict_file('/root/autodl-fs/audio_samples/董宇辉带货_40k_mono.wav')
+        scipy.io.wavfile.write(f"{sid}.wav", sr, audio_arr)
+    print(">>> start")
+    stime = time.time()
+    p_list = []
+    for sid in ["kikiv2", "wuyusen_manual_clear", "bailu2", "manbo"]:
+        p = mp.Process(target=process, args=(sid,))
+        p.start()
+        p_list.append(p)
+
+    for p in p_list:
+        p.join()
+    print(f">>> all process finished. ({(time.time() - stime)*1000:.0f}ms)")
+    sys.exit(0)
+
+
 if __name__ == '__main__':
+    # debug()
     # socketio.run(app, debug=True, host='0.0.0.0', port=6006)
     # socketio.run(app, host='0.0.0.0', port=6006, allow_unsafe_werkzeug=True)
     logger = config_log()
